@@ -24,3 +24,8 @@ jobs:
           go-version-file: "go.mod"
 
       - run: GOARCH=${{ matrix.arch }} GOOS=${{ matrix.os }} go build -v -o go-ws-proxy main.go
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: go-ws-proxy-${{ matrix.os }}-${{ matrix.arch }}
+          path: go-ws-proxy
