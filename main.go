@@ -23,9 +23,6 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	if _, err := ws.Write([]byte("hello, world!\n")); err != nil {
-		log.Fatal(err)
-	}
 	go io.CopyBuffer(ws, os.Stdin, make([]byte, ws.MaxPayloadBytes))
 	if _, err := io.CopyBuffer(ws, os.Stdin, make([]byte, ws.MaxPayloadBytes)); err != nil {
 		log.Fatal(err)
