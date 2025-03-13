@@ -2,11 +2,11 @@ package main
 
 import (
 	"flag"
-	"io"
 	"log"
 	"os"
 
 	"golang.org/x/net/websocket"
+	"golang.org/x/term"
 )
 
 func main() {
@@ -23,8 +23,30 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	go io.CopyBuffer(ws, os.Stdin, make([]byte, ws.MaxPayloadBytes))
-	if _, err := io.CopyBuffer(ws, os.Stdin, make([]byte, ws.MaxPayloadBytes)); err != nil {
-		log.Fatal(err)
+	go func() {
+		state, err := term.MakeRaw(int(os.Stdin.Fd()))
+		if err == nil {
+			defer term.Restore(int(os.Stdin.Fd()), state)
+		}
+		buf := make([]byte, 4096)
+		for {
+			n, err := os.Stdin.Read(buf)
+			if err != nil {
+				break
+			}
+			if _, err := ws.Write(buf[:n]); err != nil {
+				break
+			}
+		}
+	}()
+	buf := make([]byte, 4096)
+	for {
+		n, err := ws.Read(buf)
+		if err != nil {
+			break
+		}
+		if _, err := os.Stdout.Write(buf[:n]); err != nil {
+			break
+		}
 	}
 }
