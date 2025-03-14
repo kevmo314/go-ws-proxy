@@ -23,7 +23,10 @@ jobs:
         with:
           go-version-file: "go.mod"
 
-      - run: GOARCH=${{ matrix.arch }} GOOS=${{ matrix.os }} go build -v -o go-ws-proxy main.go
+      - run: |
+          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go mod download
+          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go test -v -race ./...
+          GOARCH=${{ matrix.arch }} GOOS=${{ matrix.os }} go build -v -o go-ws-proxy main.go
 
       - uses: actions/upload-artifact@v4
         with:

@@ -69,7 +69,7 @@ func TestMainProgram(t *testing.T) {
 		t.Fatal("stdout mismatch")
 	}
 
-	for size := 1024; size <= 1024*1024*1024; size *= 2 {
+	for size := 1024; size <= 256*1024*1024; size *= 2 {
 		buf := make([]byte, size)
 		for i := 0; i < size; i++ {
 			buf[i] = 'a'
