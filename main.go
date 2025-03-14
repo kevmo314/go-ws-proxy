@@ -1,13 +1,14 @@
 package main
 
 import (
-	"bytes"
+	"bufio"
 	"flag"
 	"io"
 	"log"
 	"os"
 
 	"golang.org/x/net/websocket"
+	"golang.org/x/term"
 )
 
 func main() {
@@ -25,52 +26,23 @@ func main() {
 		log.Fatal(err)
 	}
 	go func() {
-		buf := make([]byte, 4096)
-		var frame io.WriteCloser
-	write:
+		state, err := term.MakeRaw(int(os.Stdin.Fd()))
+		if err == nil {
+			defer term.Restore(int(os.Stdin.Fd()), state)
+		}
+		reader := bufio.NewReader(os.Stdin)
 		for {
-			n, err := os.Stdin.Read(buf)
+			line, err := reader.ReadBytes('\n')
 			if err != nil {
-				break write
+				break
 			}
-			for m := 0; m < n; {
-				if frame == nil {
-					frame, err = ws.NewFrameWriter(ws.PayloadType)
-					if err != nil {
-						break write
-					}
-				}
-				p := bytes.Index(buf[m:n], []byte("\n"))
-				if p != -1 {
-					// there is a newline in the buffer, write m to p and close the frame
-					if _, err := frame.Write(buf[m : m+p]); err != nil {
-						break write
-					}
-					if err := frame.Close(); err != nil {
-						break write
-					}
-					m = p + 1
-					frame = nil
-				} else {
-					// there is no newline in the buffer, write m to n and continue
-					if _, err := frame.Write(buf[m:n]); err != nil {
-						break write
-					}
-					m = n
-				}
+			if _, err := ws.Write(line[:len(line)-1]); err != nil {
+				break
 			}
-		}
-		if frame != nil {
-			if err := frame.Close(); err != nil {
-				return
-			}
-		}
-		if err := ws.WriteClose(1000); err != nil {
-			return
 		}
 	}()
 
-	buf := make([]byte, 4096)
+	buf := make([]byte, 16*4096)
 read:
 	for {
 		frame, err := ws.NewFrameReader()
