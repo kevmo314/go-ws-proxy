@@ -62,11 +62,11 @@ func main() {
 		}
 		if frame != nil {
 			if err := frame.Close(); err != nil {
-				log.Fatal(err)
+				return
 			}
 		}
 		if err := ws.WriteClose(1000); err != nil {
-			log.Fatal(err)
+			return
 		}
 	}()
 
