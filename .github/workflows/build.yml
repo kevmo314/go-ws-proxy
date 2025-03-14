@@ -32,3 +32,20 @@ jobs:
         with:
           name: go-ws-proxy-${{ matrix.os }}-${{ matrix.arch }}
           path: go-ws-proxy
+
+  tinygo-build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: tinygo/tinygo-action@v0.1.0
+
+      - run: |
+          go mod download
+          go test -v ./...
+          tinygo build -o go-ws-proxy main.go
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: go-ws-proxy-tinygo
+          path: go-ws-proxy
