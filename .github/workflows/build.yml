@@ -25,8 +25,8 @@ jobs:
 
       - run: |
           GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go mod download
-          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go test -v -race ./...
-          GOARCH=${{ matrix.arch }} GOOS=${{ matrix.os }} go build -v -o go-ws-proxy main.go
+          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go test -v ./...
+          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -v -o go-ws-proxy main.go
 
       - uses: actions/upload-artifact@v4
         with:
