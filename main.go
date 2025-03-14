@@ -1,12 +1,13 @@
 package main
 
 import (
+	"bytes"
 	"flag"
+	"io"
 	"log"
 	"os"
 
 	"golang.org/x/net/websocket"
-	"golang.org/x/term"
 )
 
 func main() {
@@ -24,29 +25,79 @@ func main() {
 		log.Fatal(err)
 	}
 	go func() {
-		state, err := term.MakeRaw(int(os.Stdin.Fd()))
-		if err == nil {
-			defer term.Restore(int(os.Stdin.Fd()), state)
-		}
 		buf := make([]byte, 4096)
+		var frame io.WriteCloser
+	write:
 		for {
 			n, err := os.Stdin.Read(buf)
 			if err != nil {
-				break
+				break write
 			}
-			if _, err := ws.Write(buf[:n]); err != nil {
-				break
+			for m := 0; m < n; {
+				if frame == nil {
+					frame, err = ws.NewFrameWriter(ws.PayloadType)
+					if err != nil {
+						break write
+					}
+				}
+				p := bytes.Index(buf[m:n], []byte("\n"))
+				if p != -1 {
+					// there is a newline in the buffer, write m to p and close the frame
+					if _, err := frame.Write(buf[m : m+p]); err != nil {
+						break write
+					}
+					if err := frame.Close(); err != nil {
+						break write
+					}
+					m = p + 1
+					frame = nil
+				} else {
+					// there is no newline in the buffer, write m to n and continue
+					if _, err := frame.Write(buf[m:n]); err != nil {
+						break write
+					}
+					m = n
+				}
 			}
 		}
+		if frame != nil {
+			if err := frame.Close(); err != nil {
+				log.Fatal(err)
+			}
+		}
+		if err := ws.WriteClose(1000); err != nil {
+			log.Fatal(err)
+		}
 	}()
+
 	buf := make([]byte, 4096)
+read:
 	for {
-		n, err := ws.Read(buf)
+		frame, err := ws.NewFrameReader()
 		if err != nil {
 			break
 		}
-		if _, err := os.Stdout.Write(buf[:n]); err != nil {
+		frame, err = ws.HandleFrame(frame)
+		if err != nil {
 			break
+		}
+		if frame == nil {
+			continue
+		}
+		for {
+			n, err := frame.Read(buf)
+			if err != nil {
+				break
+			}
+			if _, err := os.Stdout.Write(buf[:n]); err != nil {
+				break read
+			}
+		}
+		if _, err := os.Stdout.Write([]byte("\n")); err != nil {
+			break
+		}
+		if trailer := frame.TrailerReader(); trailer != nil {
+			io.Copy(io.Discard, trailer)
 		}
 	}
 }
