@@ -16,6 +16,13 @@ jobs:
       matrix:
         os: [linux, windows, darwin]
         arch: [amd64, arm64]
+        include:
+          - os: windows
+            ext: .exe
+          - os: linux
+            ext: ""
+          - os: darwin
+            ext: ""
 
     steps:
       - uses: actions/checkout@v4
@@ -26,9 +33,9 @@ jobs:
       - run: |
           go mod download
           go test -v ./...
-          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -v -o go-ws-proxy main.go
+          GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} go build -v -o go-ws-proxy${{ matrix.ext }} main.go
 
       - uses: actions/upload-artifact@v4
         with:
           name: go-ws-proxy-${{ matrix.os }}-${{ matrix.arch }}
-          path: go-ws-proxy
+          path: go-ws-proxy${{ matrix.ext }}
