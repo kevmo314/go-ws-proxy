@@ -26,6 +26,7 @@ func main() {
 		log.Fatal(err)
 	}
 	go func() {
+		defer ws.Close()
 		state, err := term.MakeRaw(int(os.Stdin.Fd()))
 		if err == nil {
 			defer term.Restore(int(os.Stdin.Fd()), state)
