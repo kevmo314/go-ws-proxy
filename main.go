@@ -6,6 +6,8 @@ import (
 	"io"
 	"log"
 	"os"
+	"os/signal"
+	"syscall"
 
 	"golang.org/x/net/websocket"
 	"golang.org/x/term"
@@ -26,6 +28,13 @@ func main() {
 		log.Fatal(err)
 	}
 	defer ws.Close()
+
+	sigc := make(chan os.Signal, 1)
+	signal.Notify(sigc, syscall.SIGINT, syscall.SIGTERM)
+	go func() {
+		<-sigc
+		ws.Close()
+	}()
 
 	go func() {
 		state, err := term.MakeRaw(int(os.Stdin.Fd()))
